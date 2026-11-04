@@ -12,7 +12,7 @@ Platform preferences based on Superlines 2026 and OtterlyAI research:
 
 from __future__ import annotations
 
-from geo_optimizer.models.config import SCORING
+from geo_optimizer.models.config import SCORING, YANDEX_ALICE_TOKENS
 from geo_optimizer.models.results import (
     AiDiscoveryResult,
     CitabilityResult,
@@ -49,6 +49,7 @@ def audit_platform_citation(
             _score_chatgpt(robots, llms, content, citability, schema),
             _score_perplexity(robots, llms, content, citability, signals),
             _score_google_ai(robots, schema, meta, content, citability, signals, js_rendering),
+            _score_yandex_alice(robots, schema, meta, content, citability, signals),
         ],
     )
 
@@ -254,3 +255,67 @@ def _score_google_ai(robots, schema, meta, content, citability, signals=None, js
         recs.append("Add sameAs links to social profiles and Wikipedia")
 
     return PlatformScore(platform="google_ai", score=min(score, 100), strengths=strengths, recommendations=recs)
+
+
+def _score_yandex_alice(robots, schema, meta, content, citability, signals=None) -> PlatformScore:
+    """Yandex Alice AI (fork): answers are built from fragments of top Yandex results.
+
+    Access first: YandexBot feeds the index, and a Disallow for the
+    YandexAdditional / YandexAdditionalBot tokens removes the site from Alice
+    answers even when it ranks. Then fragment readiness: direct answers,
+    Q&A blocks, entity clarity and classic Yandex on-page basics.
+    """
+    score = 0
+    strengths: list[str] = []
+    recs: list[str] = []
+
+    blocked_tokens = [t for t in YANDEX_ALICE_TOKENS if t in robots.bots_blocked]
+    if blocked_tokens:
+        recs.append(
+            f"Remove Disallow for {', '.join(blocked_tokens)}: it hides the site from Yandex Alice AI answers"
+        )
+    else:
+        score += 20
+        strengths.append("Not opted out of Alice AI answers (YandexAdditional)")
+
+    if "YandexBot" in robots.bots_blocked:
+        recs.append("Allow YandexBot: Alice AI only cites pages in the Yandex index")
+    else:
+        score += 20
+        strengths.append("YandexBot allowed (feeds Yandex Search and Alice AI)")
+
+    if citability.total_score >= 60:
+        score += 15
+        strengths.append(f"Citability score {citability.total_score}/100")
+    elif citability.total_score >= 40:
+        score += 8
+    else:
+        recs.append("Open each section with a direct 2-3 sentence answer: Alice quotes fragments, not pages")
+
+    if schema.has_faq:
+        score += 10
+        strengths.append("FAQ schema present")
+    else:
+        recs.append("Add an FAQ block with FAQPage schema for Q&A fragments")
+
+    if schema.has_organization:
+        score += 10
+        strengths.append("Organization schema present")
+    else:
+        recs.append("Add Organization/LocalBusiness schema matching the Yandex Business card")
+
+    if meta.has_title and meta.has_description and meta.has_canonical:
+        score += 10
+        strengths.append("Complete meta tags")
+    else:
+        recs.append("Complete title, description, and canonical meta tags")
+
+    if content.has_h1 and content.word_count >= 300:
+        score += 10
+        strengths.append("Quality content structure")
+
+    if signals and signals.has_freshness:
+        score += 5
+        strengths.append("Content freshness signals present")
+
+    return PlatformScore(platform="yandex_alice", score=min(score, 100), strengths=strengths, recommendations=recs)

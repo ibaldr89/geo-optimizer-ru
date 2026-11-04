@@ -36,14 +36,15 @@ def _defaults(**overrides):
 
 
 class TestPlatformCitation:
-    def test_returns_three_platforms(self):
+    def test_returns_four_platforms(self):
         result = audit_platform_citation(**_defaults())
         assert result.checked is True
-        assert len(result.platforms) == 3
+        assert len(result.platforms) == 4
         names = [p.platform for p in result.platforms]
         assert "chatgpt" in names
         assert "perplexity" in names
         assert "google_ai" in names
+        assert "yandex_alice" in names
 
     def test_all_scores_0_to_100(self):
         result = audit_platform_citation(**_defaults())

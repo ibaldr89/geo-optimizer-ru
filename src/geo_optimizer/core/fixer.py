@@ -94,7 +94,16 @@ def generate_robots_fix(result: AuditResult, base_url: str, project_config=None)
     # robots.txt exists but some bots are missing or blocked
     # Fix #211: also include bots_blocked — a bot blocked with Disallow
     # still needs an Allow rule to become accessible
-    bots_to_fix = result.robots.bots_missing + result.robots.bots_blocked
+    # Fork: never append Yandex groups — a `User-agent: YandexBot` group
+    # replaces the site's `User-agent: Yandex` group for that robot and drops
+    # its Disallow / Clean-param rules; Yandex access is reported, not patched.
+    bots_to_fix = [
+        bot
+        for bot in result.robots.bots_missing + result.robots.bots_blocked
+        if not bot.lower().startswith("yandex")
+    ]
+    if not bots_to_fix:
+        return None
     lines = [
         "",
         "# ─── Missing AI bots (added by GEO Optimizer) ───",

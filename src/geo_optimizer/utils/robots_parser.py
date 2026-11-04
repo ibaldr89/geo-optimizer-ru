@@ -199,6 +199,11 @@ def classify_bot(
             found_agent = agent
             break
 
+    # Yandex robots read `User-agent: Yandex` before `*`, and ignore `*`
+    # when that group exists (yandex.ru/support/webmaster/ru/robot-workings/user-agent)
+    if found_agent is None and bot.lower().startswith("yandex"):
+        found_agent = next((agent for agent in agent_rules if agent.lower() == "yandex"), None)
+
     via_wildcard = False
     if found_agent is None and "*" in agent_rules:
         found_agent = "*"

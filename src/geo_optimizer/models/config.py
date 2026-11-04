@@ -172,7 +172,18 @@ AI_BOTS = {
     "YouBot": "You.com AI search",
     # ── Common Crawl ────────────────────────────────────────────────────────
     "CCBot": "Common Crawl (used by many AI labs)",
+    # ── Yandex (fork: RU AI engines) ───────────────────────────────────────
+    # Alice AI answers are built from pages YandexBot already indexed;
+    # YandexAdditional(Bot) are robots.txt tokens, not crawlers, that exclude
+    # pages from YandexGPT quick answers and Alice search answers
+    # (yandex.ru/support/webmaster/ru/robot-workings/check-yandex-robots).
+    "YandexBot": "Yandex (Search + source index for Alice AI answers)",
+    "YandexAdditional": "Yandex (Alice AI answers opt-out token — not a crawler)",
+    "YandexAdditionalBot": "Yandex (Alice AI answers opt-out token — not a crawler)",
 }
+
+# Tokens that, when disallowed, remove a site from Yandex Alice AI answers
+YANDEX_ALICE_TOKENS = ("YandexAdditional", "YandexAdditionalBot")
 
 # 3-tier classification — bots grouped by function
 BOT_TIERS = {
@@ -201,6 +212,8 @@ BOT_TIERS = {
         "YouBot",
         "Amazonbot",
         "xAI-Bot",
+        "YandexBot",
+        *YANDEX_ALICE_TOKENS,
     },
     "user": {
         "ChatGPT-User",
